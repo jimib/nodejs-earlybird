@@ -1,0 +1,6 @@
+{
+  "name": "earlybird",
+  "description": "Base12 inspired application loader, launched before everything else wiring up the application",
+  "version": "0.0.1",
+  "author": "jimib <jimi.bailey@gmail.com>"
+}
