@@ -8,7 +8,7 @@ function loadAppDirectory(app,dir,target){
 	//load up the config file
 	target.config = loadJSON(app, dir + "/config.json");
 	//load up the loader instructions
-	var loader = loadJSON(app, dir + "/.loader.json") || {};
+	var loader = loadJSON(app, dir + "/.earlybird.conf") || {};
 	
 	//create our exclude list
 	var exclude = {"config.json":true}, arrExclude = loader.exclude || [];
