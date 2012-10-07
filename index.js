@@ -6,6 +6,7 @@ module.exports = loadAppDirectory;
 function loadAppDirectory(app,dir,target){
 	target = target || app;
 	//load up the config file
+	target.dirRoot = dir;
 	target.config = loadJSON(app, dir + "/config.json");
 	//load up the loader instructions
 	var loader = loadJSON(app, dir + "/.earlybird.conf") || {};
