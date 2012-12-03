@@ -70,7 +70,7 @@ function listDirectory(app, src){
 }
 
 function loadFile(app, src){
-	return fs.readFileSync(src, 'utf8');
+	return fs.existsSync() ? fs.readFileSync(src, 'utf8') : null;
 }
 
 function loadJSON(app, src){
@@ -79,9 +79,9 @@ function loadJSON(app, src){
 	try{
 		result = JSON.parse(loadFile(app, src));
 	}catch(err){
-		if(app.get('debug')){
+		//if(app.get('debug')){
 			console.log("error loading json '"+src+"': "+err);
-		}
+		//}
 	}
 	
 	return result;
