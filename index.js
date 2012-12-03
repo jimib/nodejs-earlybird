@@ -70,7 +70,7 @@ function listDirectory(app, src){
 }
 
 function loadFile(app, src){
-	return fs.existsSync() ? fs.readFileSync(src, 'utf8') : null;
+	return fs.existsSync(src) ? fs.readFileSync(src, 'utf8') : null;
 }
 
 function loadJSON(app, src){
