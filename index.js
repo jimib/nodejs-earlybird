@@ -79,9 +79,9 @@ function loadJSON(app, src){
 	try{
 		result = JSON.parse(loadFile(app, src));
 	}catch(err){
-		//if(app.get('debug')){
+		if(app.get('debug')){
 			console.log("error loading json '"+src+"': "+err);
-		//}
+		}
 	}
 	
 	return result;
