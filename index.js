@@ -3,44 +3,54 @@ var util = require("util");
 
 module.exports = loadAppDirectory;
 
-function loadAppDirectory(app,dir,target){
+function loadAppDirectory(app,dir,target, cb){
 	target = target || app;
 	//load up the config file
 	target.dirRoot = dir;
 	target.mode = process.env.NODE_ENV || "production";
 	target.config = loadJSON(app, dir + "/config.json");
+	
+	//console.log("loadAppDirectory", dir);
+	
 	//load up the loader instructions
 	var loader = loadJSON(app, dir + "/.earlybird.conf") || {};
 	
-	//create our exclude list
-	var exclude = {"config.json":true}, arrExclude = loader.exclude || [];
+	//create our exclude list - including the files we've already loaded
+	var exclude = {"config.json":true, ".earlybird.conf" : true}, arrExclude = loader.exclude || [];
 	arrExclude.forEach(function(exc){
 		//add to our list of excluded items
 		exclude[exc] = true;
 	});
+	
 	//run through the list of include items
 	var include = {}, arrInclude = loader.include || [];
-	arrInclude.forEach(function(inc){
-		//if the include is a directory they loadAppDirectory - otherwise just load it
-		loadContents(app, dir, inc, target);
-		//add this to our excluded list as we've now dealt with it
-		exclude[inc] = true;
-	});
-	
-	//work through the list of include directories/files and load them
-	var arrContents = listDirectory(app, dir);
-	arrContents.forEach(function(cnt){
-		if(!exclude[cnt]){
-			loadContents(app, dir, cnt, target);
+	//merge the rest of the contents from the directory so we can deal with everything in a single loop
+	arrInclude = arrInclude.concat(listDirectory(app, dir));
+	//now iterate all the items async
+	forEachAsync(arrInclude, function(item, next){
+		if(exclude[item]){
+			//skip
+			next();
+		}else{
+			loadContents(app, dir, item, target, function(){
+				//we have done this item - now exclude it
+				exclude[item] = true;
+				next();
+			});
 		}
+	},function(){
+		//console.log("completed: "+dir);
+		if(cb)cb();
 	});
 };
 
-function loadContents(app, dir, name, target){
+function loadContents(app, dir, name, target, next){
 	//prohibit loading hidden files
 	if(name.indexOf(".") == 0){
 		return;
 	}
+	
+	//console.log("loadContents", dir, name);
 	
 	//drop the .js from the name to get the id
 	var id = name;
@@ -52,12 +62,30 @@ function loadContents(app, dir, name, target){
 	if(stats.isDirectory()){
 		target[id] = {};
 		//load up the directory - populating the target on route
-		loadAppDirectory(app,src,target[id]);
+		loadAppDirectory(app,src,target[id], function(){
+			next();
+		});
 	}else{
+		function attachModule(mod){
+			//if object returned then store it on the app/target
+			if(mod)target[id] = mod;
+			//next - syncronous
+			next();
+		}
 		//load up the contents
-		var mod = require(src)(app);
-		//if object returned then store it on the app/target
-		if(mod)target[id] = mod;
+		try{
+			var mod = require(src)(app, attachModule);
+
+			//backward compatibility
+			if(mod !== attachModule){
+				//we're not waiting
+				attachModule(mod);
+			}
+		}catch(err){
+			console.log("Error loading module: ",src,err);
+			//something wrong with this module
+			next();
+		}
 	}
 }
 
@@ -85,4 +113,22 @@ function loadJSON(app, src){
 	}
 	
 	return result;
+}
+
+forEachAsync = function(arr, action, cb){
+	var i = - 1;
+	var lim = arr.length;
+
+	next();
+
+	function next(){
+		if(++i < lim){
+			action(arr[i], function(err, result){
+				//arr[i] = result || arr[i];
+				next();
+			});
+		}else{
+			cb();
+		}
+	}
 }
